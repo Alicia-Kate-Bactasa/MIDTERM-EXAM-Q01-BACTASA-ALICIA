@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Ticket System</title>
+    <style>
+        :root {
+            font-family: Arial, sans-serif;
+            color: #17324d;
+            background: #ffffff;
+        }
+
+        body {
+            max-width: 850px;
+            margin: 0 auto;
+            padding: 32px 20px;
+        }
+
+        h2 {
+            color: #125da8;
+            margin-bottom: 24px;
+        }
+
+        .panel, .ticket {
+            background: #ffffff;
+            border: 1px solid #c9def3;
+            border-radius: 8px;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(18, 93, 168, 0.08);
+        }
+
+        .panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        input, select, button {
+            box-sizing: border-box;
+            border: 1px solid #a9c8e8;
+            border-radius: 5px;
+            padding: 10px 12px;
+            font: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: 2px solid #72afe5;
+            border-color: #237bc1;
+        }
+
+        button {
+            background: #1769aa;
+            color: #ffffff;
+            border-color: #1769aa;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0e4f86;
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #c9def3;
+            margin: 24px 0;
+        }
+
+        #list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .ticket {
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .ticket-problem {
+            margin: 0 90px 12px 0;
+            font-size: 1.05rem;
+        }
+
+        .ticket-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 18px;
+            color: #49657d;
+            font-size: 0.95rem;
+        }
+
+        .ticket-details strong {
+            color: #17324d;
+        }
+
+        .ticket button {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            padding: 6px 10px;
+        }
+
+        #searchRes {
+            flex-basis: 100%;
+            color: #49657d;
+        }
+    </style>
+</head>
+<body>
+    <h2>Service Ticket System</h2>
+    <div class="panel">
+        <input type="text" id="name" placeholder="Customer Name">
+        <input type="text" id="problem" placeholder="Problem">
+        <input type="text" id="priority" placeholder="Priority">
+        <button onclick="add()">Add</button>
+    </div>
+    <hr>
+    <div class="panel">
+        <input type="text" id="searchId" placeholder="Search ID">
+        <button onclick="search()">Search</button>
+        <div id="searchRes"></div>
+    </div>
+    <hr>
+    <div id="list"></div>
+
+    <script>
+        const load = async () => {
+            const res = await fetch('/api/tickets');
+            const data = await res.json();
+            document.getElementById('list').innerHTML = data.map(i => `
+                <article class="ticket">
+                    <p class="ticket-problem"><strong>${i.problem}</strong></p>
+                    <div class="ticket-details">
+                        <span><strong>ID:</strong> ${i.id}</span>
+                        <span><strong>Customer:</strong> ${i.customer_name}</span>
+                        <span><strong>Priority:</strong> ${i.priority}</span>
+                        <span><strong>Status:</strong> ${i.status}</span>
+                    </div>
+                    <button onclick="del('${i.id}')">Delete</button>
+                </article>
+            `).join('');
+        };
+
+        const add = async () => {
+            await fetch('/api/tickets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_name: document.getElementById('name').value,
+                    problem: document.getElementById('problem').value,
+                    priority: document.getElementById('priority').value
+                })
+            });
+            load();
+        };
+
+        const del = async (id) => {
+            await fetch(`/api/tickets/${id}`, { method: 'DELETE' });
+            load();
+        };
+
+        const search = async () => {
+            const res = await fetch(`/api/tickets/${document.getElementById('searchId').value}`);
+            const div = document.getElementById('searchRes');
+            if (!res.ok) div.innerHTML = 'Not found';
+            else {
+                const i = await res.json();
+                div.innerHTML = `
+                    <article class="ticket">
+                        <p class="ticket-problem"><strong>${i.problem}</strong></p>
+                        <div class="ticket-details">
+                            <span><strong>ID:</strong> ${i.id}</span>
+                            <span><strong>Customer:</strong> ${i.customer_name}</span>
+                            <span><strong>Priority:</strong> ${i.priority}</span>
+                            <span><strong>Status:</strong> ${i.status}</span>
+                        </div>
+                    </article>
+                `;
+            }
+        };
+        load();
+    </script>
+</body>
+</html>
